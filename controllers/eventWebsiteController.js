@@ -63,7 +63,7 @@ const cloneWebsiteFromTemplate = async (req, res) => {
     }
 };
 
-// get cloned website for display/edit
+// get cloned website for display/edit(authenticated user)
 const getWebsite = async (req, res) => {
     const { websiteId } = req.params;
 
@@ -150,8 +150,44 @@ const updateWebsite = async (req, res) => {
     }
 };
 
+// get website for visitor
+const getPublicWebsite = async (req, res) => {
+    const { websiteId } = req.params;
+
+    try {
+        const website = await EventWebsite.findById(websiteId)
+            .populate({
+                path: "belongsToThisEvent",
+                select: "eventName description date time location",
+            })
+            .populate({
+                path: "baseTemplate",
+                select: "templateName sections",
+            });
+
+        if (!website) {
+            return res.status(404).json({ success: false, message: "Website not found" });
+        }
+
+        res.status(200).json(
+            {
+                success: true,
+                message: "Successfully fetched website",
+                data: website
+            });
+    } catch (error) {
+        console.error("Error fetching public website:", error);
+        res.status(500).json(
+            {
+                success: false,
+                message: "Failed to fetch website"
+            });
+    }
+};
+
 module.exports = {
     cloneWebsiteFromTemplate,
     getWebsite,
-    updateWebsite
+    updateWebsite,
+    getPublicWebsite,
 }
