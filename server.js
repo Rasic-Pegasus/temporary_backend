@@ -6,7 +6,6 @@ const eventRoutes = require("./routes/eventRoutes");
 const eventWebsiteRoutes = require("./routes/eventWebsiteRoutes");
 const userRoutes = require("./routes/userRoutes");
 const contentRoutes = require('./routes/contentRoutes');
-const mailroute = require("./routes/MailRoute");
 
 const connectDB = require("./config/db");
 const cors = require("cors");
@@ -37,7 +36,6 @@ app.use("/api/eventWebsites", eventWebsiteRoutes);
 
 app.use("/api/user", userRoutes);
 app.use('/api/content', contentRoutes)
-app.use("/api/sendmail", mailroute);
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);

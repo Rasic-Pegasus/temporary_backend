@@ -82,6 +82,42 @@ const getUserEvents = async (req, res) => {
     }
 };
 
+// get single event
+const getSingleEvent = async (req, res) => {
+    const { eventId } = req.params;
+    const userId = req.user.id;
+
+    try {
+        const event = await Event.findById(eventId)
+            .populate({
+                path: "eventWebsite",
+                select: "sections baseTemplate",
+            });
+
+        if (!event) {
+            return res.status(404).json({ success: false, message: "Event not found" });
+        }
+
+        // Ownership check
+        if (event.organizer.toString() !== userId) {
+            return res.status(403).json({ success: false, message: "Not authorized to view this event" });
+        }
+
+        res.status(200).json(
+            {
+                success: true,
+                data: event
+            });
+    } catch (error) {
+        console.error("Error fetching single event:", error);
+        res.status(500).json(
+            {
+                success: false,
+                message: "Failed to fetch event"
+            });
+    }
+};
+
 // edit specific event
 const editEvent = async (req, res) => {
     const { eventId } = req.params;
@@ -174,6 +210,7 @@ const deleteEvent = async (req, res) => {
 module.exports = {
     createEvent,
     getUserEvents,
+    getSingleEvent,
     editEvent,
     deleteEvent
 }

@@ -8,6 +8,7 @@ const dotenv = require("dotenv");
 
 dotenv.config();
 
+// register new user/event organizer
 const registerUser = async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -59,6 +60,7 @@ const registerUser = async (req, res) => {
   }
 };
 
+// login user and send accessToken to response
 const loginUser = async (req, res) => {
   try {
     const { email, password: userPassword } = req.body;
@@ -100,6 +102,7 @@ const loginUser = async (req, res) => {
   }
 };
 
+// yet to configure
 const forgotPassword = async (req, res) => {
   const { email } = req.body;
 
@@ -131,6 +134,7 @@ const forgotPassword = async (req, res) => {
   }
 };
 
+// yet to configure
 const resetPassword = async (req, res) => {
   const { accessToken, newPassword } = req.body;
 
@@ -154,6 +158,7 @@ const resetPassword = async (req, res) => {
   }
 };
 
+// yet to configure
 const changePassword = async (req, res) => {
   const { id } = req.params;
   const { oldPassword, newPassword } = req.body;
@@ -196,50 +201,10 @@ const changePassword = async (req, res) => {
   }
 };
 
-const sendMail = async (req, res) => {
-  try {
-    const msg = {
-      to: "sagolbaruwal4@gmail.com",
-      from: "sagolbaruwal3@gmail.com",
-      subject: "Sending with SendGrid is Fun",
-      text: "and easy to do anywhere, even with Node.js",
-      html: "<strong>HEyy</strong>",
-    };
-    sgMail
-      .send(msg)
-      .then(() => {
-        console.log("Email sent");
-      })
-      .catch((error) => {
-        console.error(error);
-      });
-    return res.status(200).json({
-      success: true,
-      message: `Email sent successfully to ${to}`,
-    });
-  } catch (error) {
-    console.error("Error sending email:", error);
-    res.status(500).json({ success: false, message: "Failed to send email." });
-  }
-};
-
-const getallmembers = async (req, res) => {
-  try {
-    const allmembers = await userModel.find();
-
-    res.status(200).json(allmembers);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Failed to fetch members" });
-  }
-};
-
 module.exports = {
   registerUser,
   loginUser,
   forgotPassword,
   resetPassword,
   changePassword,
-  sendMail,
-  getallmembers,
 };
