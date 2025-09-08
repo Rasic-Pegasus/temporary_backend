@@ -1,0 +1,44 @@
+const express = require("express");
+const dotenv = require("dotenv");
+
+const authRoutes = require("./routes/authRoutes");
+const eventRoutes = require("./routes/eventRoutes");
+const eventWebsiteRoutes = require("./routes/eventWebsiteRoutes");
+const userRoutes = require("./routes/userRoutes");
+const contentRoutes = require('./routes/contentRoutes');
+const mailroute = require("./routes/MailRoute");
+
+const connectDB = require("./config/db");
+const cors = require("cors");
+const morgan = require("morgan");
+
+const app = express();
+
+dotenv.config();
+
+connectDB();
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cors());
+app.use(morgan("dev"));
+
+const port = process.env.PORT;
+
+console.log(`PORT: ${port}`);
+
+app.get("/api/test", (_, res) => {
+  res.send("App is working fine! Good to go!");
+});
+
+app.use("/api/auth", authRoutes);
+app.use("/api/events", eventRoutes);
+app.use("/api/eventWebsites", eventWebsiteRoutes);
+
+app.use("/api/user", userRoutes);
+app.use('/api/content', contentRoutes)
+app.use("/api/sendmail", mailroute);
+
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
+});

@@ -1,0 +1,19 @@
+const mongoose = require("mongoose");
+
+// section of base template
+const templateSectionSchema = new mongoose.Schema(
+    {
+        sectionName: { type: String, required: true },
+        defaultContent: { type: mongoose.Schema.Types.Mixed, required: true },
+    }
+);
+
+// pre-defined base theme
+const templateSchema = new mongoose.Schema(
+    {
+        themeName: { type: String, required: true, unique: true },
+        sections: [templateSectionSchema],
+    }
+);
+
+module.exports = mongoose.model("Template", templateSchema);
