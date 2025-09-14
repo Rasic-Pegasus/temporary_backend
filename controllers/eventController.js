@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const Event = require("../models/eventModel.js");
 const User = require("../models/userModel.js");
+const EventWebsite = require("../models/eventWebsiteModel.js")
 
 // create new event
 const createEvent = async (req, res) => {
@@ -11,7 +12,7 @@ const createEvent = async (req, res) => {
         const userId = req.user.id;
         const { eventName, description, location, date, time, expectedNumberOfPeople, phone, email } = req.body;
 
-        // save in session
+        // create the event
         const event = await Event.create([{
             organizer: userId,
             eventName,
@@ -24,12 +25,11 @@ const createEvent = async (req, res) => {
             email
         }], { session });
 
-        // save in session
+        // Update the user's event list
         await User.findByIdAndUpdate(userId, { $push: { events: event[0]._id } }, { session });
 
-        // if both db operation succeeds then only consider success
+        // Commit the transaction if both operations succeed
         await session.commitTransaction();
-        session.endSession();
 
         res.status(201).json(
             {
@@ -41,12 +41,15 @@ const createEvent = async (req, res) => {
     } catch (error) {
         // if any one db operation fails
         await session.abortTransaction();
-        session.endSession();
+
         console.error(error);
-        res.status(500).json(
+
+        const statusCode = error.statusCode || 500;
+        const message = error.message || "Internal server error";
+        res.status(statusCode).json(
             {
                 success: false,
-                message: "Failed to create event"
+                message: message
             }
         );
     } finally {
@@ -170,25 +173,27 @@ const deleteEvent = async (req, res) => {
     try {
         const event = await Event.findById(eventId).session(session);
         if (!event) {
-            await session.abortTransaction();
-            session.endSession();
-            return res.status(404).json({ success: false, message: "Event not found" });
+            const error = new Error('Event not found');
+            error.statusCode = 404;
+            throw error;
         }
 
         if (event.organizer.toString() !== userId) {
-            await session.abortTransaction();
-            session.endSession();
-            return res.status(403).json({ success: false, message: "Not authorized to delete this event" });
+            const error = new Error('User not authorized to perform this operation');
+            error.statusCode = 403;
+            throw error;
         }
 
-        // delete linked website
+        // delete linked website if ever created
         await EventWebsite.findOneAndDelete({ belongsToThisEvent: eventId }).session(session);
 
         // Delete the event
         await Event.findByIdAndDelete(eventId).session(session);
 
+        // Remove the event from the User's events list as well
+        await User.findByIdAndUpdate(userId, { $pull: { events: eventId } }).session(session);
+
         await session.commitTransaction();
-        session.endSession();
 
         res.status(200).json(
             {
@@ -197,15 +202,21 @@ const deleteEvent = async (req, res) => {
             }
         );
     } catch (error) {
+        // if any one db operation fails
         await session.abortTransaction();
-        session.endSession();
+
         console.error(error);
-        res.status(500).json(
+
+        const statusCode = error.statusCode || 500;
+        const message = error.message || "Internal server error";
+        res.status(statusCode).json(
             {
                 success: false,
-                message: "Failed to delete event"
+                message: message
             }
         );
+    } finally {
+        session.endSession();
     }
 };
 

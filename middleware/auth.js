@@ -1,29 +1,52 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
+const User = require("../models/userModel");
 
 dotenv.config();
 
-const authenticate = (req, res, next) => {
+const authenticate = async (req, res, next) => {
   const errorMessage = "Authentication failed. Invalid token or missing token!";
 
   try {
     const authHeader = req.headers.authorization;
 
     if (!authHeader?.startsWith("Bearer ")) {
-      throw new Error(errorMessage);
+      const error = new Error(errorMessage);
+      error.statusCode = 403;
+      throw error;
     }
 
     const accessToken = authHeader.split(" ")[1];
 
     if (!accessToken) {
-      throw new Error(errorMessage);
+      const error = new Error(errorMessage);
+      error.statusCode = 403;
+      throw error;
     }
+
     const decoded = jwt.verify(accessToken, process.env.JWT_SECRET);
     req.user = decoded;
+
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      const error = new Error("User doesn't exist!");
+      error.statusCode = 404;
+      throw error;
+    }
+
     next();
   } catch (error) {
-    return res.status(401).json({ message: error instanceof Error ? error.message : errorMessage });
+    console.error(error);
+
+    const statusCode = error.statusCode || 500;
+    const message = error.message || "Internal server error";
+    res.status(statusCode).json(
+      {
+        success: false,
+        message: message
+      }
+    );
   }
 };
 
