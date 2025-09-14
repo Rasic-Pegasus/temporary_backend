@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const Event = require("../models/eventModel.js");
 const User = require("../models/userModel.js");
-const EventWebsite = require("../models/eventWebsiteModel.js")
+const Website = require("../models/websiteModel.js")
 
 // create new event
 const createEvent = async (req, res) => {
@@ -49,7 +49,7 @@ const createEvent = async (req, res) => {
         res.status(statusCode).json(
             {
                 success: false,
-                message: message
+                message
             }
         );
     } finally {
@@ -64,7 +64,7 @@ const getUserEvents = async (req, res) => {
     try {
         const events = await Event.find({ organizer: userId })
             .populate({
-                path: "eventWebsite",
+                path: "website",
                 select: "sections baseTemplate",
             })
             .sort({ createdAt: -1 }); // newest first
@@ -95,7 +95,7 @@ const getSingleEvent = async (req, res) => {
     try {
         const event = await Event.findById(eventId)
             .populate({
-                path: "eventWebsite",
+                path: "website",
                 select: "sections baseTemplate",
             });
 
@@ -124,39 +124,47 @@ const getSingleEvent = async (req, res) => {
 };
 
 // edit specific event
-const editEvent = async (req, res) => {
+const updateEvent = async (req, res) => {
     const { eventId } = req.params;
     const userId = req.user.id;
     const updates = req.body;
 
     try {
         const event = await Event.findById(eventId);
-        if (!event) return res.status(404).json({ message: "Event not found" });
+        if (!event) {
+            const error = new Error('Event not found');
+            error.statusCode = 404;
+            throw error;
+        }
 
         // Ownership check
         if (event.organizer.toString() !== userId) {
-            return res.status(403).json({ message: "Not authorized to edit this event" });
+            const error = new Error('Not authorized to edit this event');
+            error.statusCode = 403;
+            throw error;
         }
 
-        // Update allowed fields
-        Object.keys(updates).forEach(key => {
-            event[key] = updates[key];
+        const updatedEvent = await Event.findByIdAndUpdate(eventId, updates, {
+            new: true,
+            runValidators: true,
         });
 
-        await event.save();
         res.status(200).json(
             {
                 success: true,
                 message: "Event updated successfully",
-                data: event
+                data: updatedEvent
             }
         );
     } catch (error) {
         console.error(error);
-        res.status(500).json(
+
+        const statusCode = error.statusCode || 500;
+        const message = error.message || "Internal server error";
+        res.status(statusCode).json(
             {
-                success: true,
-                message: "Failed to update event"
+                success: false,
+                message
             }
         );
     }
@@ -185,7 +193,7 @@ const deleteEvent = async (req, res) => {
         }
 
         // delete linked website if ever created
-        await EventWebsite.findOneAndDelete({ belongsToThisEvent: eventId }).session(session);
+        await Website.findOneAndDelete({ belongsToThisEvent: eventId }).session(session);
 
         // Delete the event
         await Event.findByIdAndDelete(eventId).session(session);
@@ -212,7 +220,7 @@ const deleteEvent = async (req, res) => {
         res.status(statusCode).json(
             {
                 success: false,
-                message: message
+                message
             }
         );
     } finally {
@@ -224,6 +232,6 @@ module.exports = {
     createEvent,
     getUserEvents,
     getSingleEvent,
-    editEvent,
+    updateEvent,
     deleteEvent
 }

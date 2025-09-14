@@ -6,20 +6,19 @@ const eventSchema = new mongoose.Schema(
         organizer: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // opt
 
         // event details
-        eventName: { type: String, default: "" },
-        description: { type: String, default: "" },
-        location: { type: String, default: "" },
-        date: { type: String, default: "" },
-        time: { type: String, default: "" },
-        expectedNumberOfPeople: { type: Number, default: 0 },
-        phone: { type: String, default: "" }, // for viewers
-        email: { type: String, default: "" }, // for viewers
+        eventName: { type: String },
+        description: { type: String },
+        location: { type: String },
+        date: { type: String },
+        time: { type: String },
+        expectedNumberOfPeople: { type: Number },
+        phone: { type: String }, // for viewers
+        email: { type: String }, // for viewers
         template: { type: mongoose.Schema.Types.ObjectId, ref: "Template" },
-        eventWebsite: { type: mongoose.Schema.Types.ObjectId, ref: "EventWebsite" },
+        website: { type: mongoose.Schema.Types.ObjectId, ref: "Website" },
         status: {
             type: String,
             enum: ["planned", "completed", "failed"], // can be easily changed later
-            default: "planned"
         },
     },
     {

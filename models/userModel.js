@@ -8,10 +8,10 @@ const userSchema = new mongoose.Schema(
     password: { type: String, required: true },
 
     // for profile update - intended to be used later
-    profileImage: { type: String, default: "" },
-    address: { type: String, default: "" },
-    phone: { type: String, default: "" },
-    country: { type: String, default: "" },
+    profileImage: { type: String },
+    address: { type: String },
+    phone: { type: String },
+    country: { type: String },
 
     // array of reference to event specific to particular user
     events: [{ type: mongoose.Schema.Types.ObjectId, ref: "Event" }],
