@@ -3,7 +3,7 @@ const dotenv = require("dotenv");
 
 const authRoutes = require("./routes/authRoutes");
 const eventRoutes = require("./routes/eventRoutes");
-const eventWebsiteRoutes = require("./routes/eventWebsiteRoutes");
+const websiteRoutes = require("./routes/websiteRoutes");
 const userRoutes = require("./routes/userRoutes");
 const contentRoutes = require('./routes/contentRoutes');
 
@@ -32,7 +32,7 @@ app.get("/api/test", (_, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/events", eventRoutes);
-app.use("/api/eventWebsites", eventWebsiteRoutes);
+app.use("/api/websites", websiteRoutes);
 
 app.use("/api/user", userRoutes);
 app.use('/api/content', contentRoutes)

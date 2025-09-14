@@ -49,7 +49,7 @@ const comparePassword = async (password, hashedPassword) => {
 const generateToken = (id) => {
   try {
     const token = jwt.sign({ id }, process.env.JWT_SECRET, {
-      expiresIn: "1d",
+      expiresIn: "7d",
     });
     return token;
   } catch (err) {

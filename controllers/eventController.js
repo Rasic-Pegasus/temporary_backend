@@ -35,7 +35,7 @@ const createEvent = async (req, res) => {
             {
                 success: true,
                 message: "Successfully created event",
-                event: event[0],
+                data: event[0],
             }
         );
     } catch (error) {
@@ -49,6 +49,8 @@ const createEvent = async (req, res) => {
                 message: "Failed to create event"
             }
         );
+    } finally {
+        session.endSession();
     }
 };
 

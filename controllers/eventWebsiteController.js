@@ -10,8 +10,7 @@ const cloneWebsiteFromTemplate = async (req, res) => {
 
     try {
         const userId = req.user.id;
-        const { eventId } = req.params;
-        const { templateId } = req.body;
+        const { eventId, templateId } = req.body;
 
         // fetch the event
         const event = await Event.findById(eventId).session(session);

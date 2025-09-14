@@ -5,9 +5,9 @@ const { authenticate } = require("../middleware/auth.js");
 const router = express.Router();
 
 router
-    .post("/:eventId/create", authenticate, cloneWebsiteFromTemplate)
-    .get("/:websiteId", authenticate, getWebsite)
-    .patch("/:websiteId/sections/:sectionName", authenticate, updateWebsite)
     .get("/:websiteId", getPublicWebsite)
+    .get("/:websiteId", authenticate, getWebsite)
+    .post("/create", authenticate, cloneWebsiteFromTemplate)
+    .patch("/:websiteId/sections/:sectionName", authenticate, updateWebsite)
 
 module.exports = router;

@@ -5,12 +5,10 @@ const { createEvent, getUserEvents, getSingleEvent, editEvent, deleteEvent } = r
 const router = express.Router();
 
 router
-    .post("/create", authenticate, createEvent)
     .get("/", authenticate, getUserEvents)
     .get("/:eventId", authenticate, getSingleEvent)
+    .post("/create", authenticate, createEvent)
     .put("/:eventId", authenticate, editEvent)
     .delete("/:eventId", authenticate, deleteEvent)
 
 module.exports = router;
-
-// todo: update, delete the created event
