@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const Event = require("../models/eventModel.js");
 const Template = require("../models/templateModel.js");
 const Website = require("../models/websiteModel.js");
+const sendEmail = require("../helpers/sendEmail");
 
 // clone website from template(your first website)
 const cloneWebsiteFromTemplate = async (req, res) => {
@@ -139,7 +140,6 @@ const getWebsite = async (req, res) => {
 const updateWebsite = async (req, res) => {
     const { websiteId, sectionId } = req.params;
     const content = req.body;
-    console.log(content)
     const userId = req.user.id;
 
     try {
@@ -204,7 +204,7 @@ const getPublicWebsite = async (req, res) => {
         const website = await Website.findById(websiteId)
             .populate({
                 path: "belongsToThisEvent",
-                select: "eventName description date time location",
+                select: "eventName description date time location email",
             })
             .populate({
                 path: "baseTemplate",
@@ -237,9 +237,49 @@ const getPublicWebsite = async (req, res) => {
     }
 };
 
+// send email to organizer from website viewer
+const sendEmailToOrganizer = async (req, res) => {
+    const formData = req.body;
+
+    try {
+        if (!formData.viewerEmail) {
+            const error = new Error("Please provide your email address");
+            error.statusCode = 400;
+            throw error;
+        }
+
+        // for developer only while testing
+        if (!formData.organizerEmail) {
+            const error = new Error("Please include organizer email address in the request body");
+            error.statusCode = 400;
+            throw error;
+        }
+
+        await sendEmail(formData);
+
+        res.status(200).json(
+            {
+                success: true,
+                message: "Thank you for reaching out! We’ve received your email and will get back to you as soon as possible",
+            });
+    } catch (error) {
+        console.error(error);
+
+        const statusCode = error.statusCode || 500;
+        const message = error.message || "Internal server error";
+        res.status(statusCode).json(
+            {
+                success: false,
+                message
+            }
+        );
+    }
+}
+
 module.exports = {
     cloneWebsiteFromTemplate,
     getWebsite,
     updateWebsite,
     getPublicWebsite,
+    sendEmailToOrganizer
 }
