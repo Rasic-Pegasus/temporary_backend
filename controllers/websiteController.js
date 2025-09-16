@@ -267,6 +267,70 @@ const getPublicWebsite = async (req, res) => {
     }
 };
 
+// delete website for visitor
+const deleteWebsite = async (req, res) => {
+    const userId = req.user.id;
+    const { websiteId } = req.params;
+
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+        const website = await Website.findById(websiteId)
+            .populate({
+                path: "belongsToThisEvent",
+                select: "organizer",
+            })
+            .session(session);
+
+        if (!website) {
+            const error = new Error("Website not found");
+            error.statusCode = 404;
+            throw error;
+        }
+
+        // ensure current user is the event organizer
+        if (website.belongsToThisEvent.organizer.toString() !== userId) {
+            const error = new Error("Not authorized to delete this website");
+            error.statusCode = 403;
+            throw error;
+        }
+
+        // delete the website
+        await Website.findByIdAndDelete(websiteId).session(session);
+
+        // clear website reference from event
+        await Event.findByIdAndUpdate(
+            website.belongsToThisEvent._id,
+            { $unset: { website: "" } },
+            { new: true }
+        ).session(session);
+
+        await session.commitTransaction();
+
+        res.status(200).json(
+            {
+                success: true,
+                message: "Successfully deleted website"
+            });
+    } catch (error) {
+        await session.abortTransaction();
+
+        console.error(error);
+
+        const statusCode = error.statusCode || 500;
+        const message = error.message || "Internal server error";
+        res.status(statusCode).json(
+            {
+                success: false,
+                message
+            }
+        );
+    } finally {
+        session.endSession();
+    }
+};
+
 // send email to organizer from website viewer
 const sendEmailToOrganizer = async (req, res) => {
     const formData = req.body;
@@ -311,5 +375,6 @@ module.exports = {
     getWebsite,
     updateWebsite,
     getPublicWebsite,
+    deleteWebsite,
     sendEmailToOrganizer
 }
