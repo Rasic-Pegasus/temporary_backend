@@ -11,7 +11,7 @@ const templateSectionSchema = new mongoose.Schema(
 // pre-defined base theme
 const templateSchema = new mongoose.Schema(
     {
-        themeName: { type: String, required: true, unique: true },
+        templateName: { type: String, required: true, unique: true },
         sections: [templateSectionSchema],
     }
 );
