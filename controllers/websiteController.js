@@ -3,6 +3,7 @@ const Event = require("../models/eventModel.js");
 const Template = require("../models/templateModel.js");
 const Website = require("../models/websiteModel.js");
 const sendEmail = require("../helpers/sendEmail");
+const uploadToCloudinary = require("../helpers/uploadToCloudinary.js");
 
 // clone website from template(your first website)
 const cloneWebsiteFromTemplate = async (req, res) => {
@@ -139,8 +140,9 @@ const getWebsite = async (req, res) => {
 // edit the cloned website(your main website)
 const updateWebsite = async (req, res) => {
     const { websiteId, sectionId } = req.params;
-    const content = req.body;
     const userId = req.user.id;
+    const content = req.body;
+    const images = req.files;
 
     try {
         // find website and populate its event + organizer
@@ -171,8 +173,36 @@ const updateWebsite = async (req, res) => {
             throw error;
         }
 
-        // update section content
-        section.content = content;
+        if (images && images.length > 0) {
+            const uploadedImages = {};
+
+            for (const image of images) {
+                const result = await uploadToCloudinary(
+                    image.buffer,
+                    "website_section_images"
+                );
+
+                // if the field already exists, push into array (for gallery/multi-images)
+                if (uploadedImages[image.fieldname]) {
+                    uploadedImages[image.fieldname].push(result.secure_url);
+                } else {
+                    uploadedImages[image.fieldname] = [result.secure_url];
+                }
+            }
+
+            // Merge uploaded images with body content
+            // If only one image was uploaded for a field, store it as string instead of array
+            for (const field in uploadedImages) {
+                if (uploadedImages[field].length === 1) {
+                    content[field] = uploadedImages[field][0];
+                } else {
+                    content[field] = uploadedImages[field];
+                }
+            }
+        }
+
+        // Update section content
+        section.content = { ...section.content, ...content };
         await website.save();
 
         return res.status(200).json(

@@ -4,8 +4,6 @@ const dotenv = require("dotenv");
 const authRoutes = require("./routes/authRoutes");
 const eventRoutes = require("./routes/eventRoutes");
 const websiteRoutes = require("./routes/websiteRoutes");
-const userRoutes = require("./routes/userRoutes");
-const contentRoutes = require('./routes/contentRoutes');
 
 const connectDB = require("./config/db");
 const cors = require("cors");
@@ -33,9 +31,6 @@ app.get("/api/test", (_, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/events", eventRoutes);
 app.use("/api/websites", websiteRoutes);
-
-app.use("/api/user", userRoutes);
-app.use('/api/content', contentRoutes)
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
