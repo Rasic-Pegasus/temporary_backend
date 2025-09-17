@@ -1,7 +1,7 @@
-const userModel = require("../models/userModel");
+const User = require("../models/userModel");
 const { hashedPassword, comparePassword, generateToken } = require("../middleware/auth");
 const bcrypt = require("bcryptjs");
-const sgMail = require("@sendgrid/mail");
+const { sgMail, senderEmailAddress } = require("../config/sendgrid");
 const validator = require("validator");
 const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
@@ -29,7 +29,7 @@ const registerUser = async (req, res) => {
         .send({ error: "Password must be at least 8 characters" });
     }
 
-    const existingUser = await userModel.findOne({ email });
+    const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res
         .status(400)
@@ -38,25 +38,27 @@ const registerUser = async (req, res) => {
 
     const hashPassword = await hashedPassword(password);
 
-    userModel.create({
+    User.create({
       name,
       email,
       password: hashPassword,
     });
 
-    res
-      .status(201)
-      .send({
+    res.status(201).json(
+      {
         success: true,
         message: 'You have been registered. Please proceed to login.'
-      });
+      }
+    );
   } catch (error) {
     console.error(error);
-    res.status(500).json({
-      success: false,
-      message: "An error occurred during registration",
-      error: error.message || error,
-    });
+    res.status(500).json(
+      {
+        success: false,
+        message: "An error occurred during registration",
+        error: error.message || error,
+      }
+    );
   }
 };
 
@@ -71,7 +73,7 @@ const loginUser = async (req, res) => {
         .send({ success: false, message: "Email and Password are required" });
     }
 
-    const user = await userModel.findOne({ email });
+    const user = await User.findOne({ email });
 
     if (!user) {
       return res
@@ -86,41 +88,56 @@ const loginUser = async (req, res) => {
         .send({ success: false, message: "Incorrect password" });
     }
 
-    const accessToken = generateToken(user._id);
+    const accessToken = generateToken(user._id, "7d");
 
     const { password, ...userWithoutPassword } = user.toObject();
 
-    res.status(200).send({
-      success: true,
-      message: "Successfully logged in",
-      data: userWithoutPassword,
-      accessToken,
-    });
+    res.status(200).json(
+      {
+        success: true,
+        message: "Successfully logged in",
+        data: userWithoutPassword,
+        accessToken,
+      }
+    );
   } catch (error) {
     console.log(error);
-    res.status(500).send({ success: false, message: "Login error. Please try again.", error });
+    res.status(500).json(
+      {
+        success: false,
+        message: "Login error. Please try again.",
+        error
+      }
+    );
   }
 };
 
-// yet to configure
 const forgotPassword = async (req, res) => {
   const { email } = req.body;
 
   try {
-    const user = await userModel.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ message: "User not found." });
+    if (!email) {
+      res.status(404).json({ success: false, message: "Please provide email address" })
     }
-    const resetToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
-    });
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    const resetToken = generateToken(user._id, "5m");
+
+    if (!resetToken) {
+      return res.status(500).json({ success: false, message: "Failed to generate reset token" });
+    }
 
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
 
     const msg = {
       to: email,
-      from: "sagolbaruwal3@gmail.com",
-      subject: "Password Reset Request",
+      from: senderEmailAddress,
+      subject: "Reset Password",
       text: `You requested a password reset. Click the link below to reset your password: \n\n${resetUrl}`,
       html: `<p>You requested a password reset. Click the link below to reset your password:</p><a href="${resetUrl}">Reset Password</a>`,
     };
@@ -134,14 +151,13 @@ const forgotPassword = async (req, res) => {
   }
 };
 
-// yet to configure
 const resetPassword = async (req, res) => {
   const { accessToken, newPassword } = req.body;
 
   try {
     const decoded = jwt.verify(accessToken, process.env.JWT_SECRET);
 
-    const user = await userModel.findById(decoded.userId);
+    const user = await User.findById(decoded.id);
     if (!user) {
       return res.status(404).json({ message: "User not found." });
     }
@@ -158,46 +174,44 @@ const resetPassword = async (req, res) => {
   }
 };
 
-// yet to configure
 const changePassword = async (req, res) => {
-  const { id } = req.params;
+  const userId = req.user.id;
   const { oldPassword, newPassword } = req.body;
 
   try {
     if (!oldPassword || !newPassword) {
-      return res.status(400).json({
-        success: false,
-        message: "Both old and new passwords are required.",
-      });
+      return res.status(400).json({ success: false, message: "Both old and new passwords are required." });
     }
 
-    const user = await userModel.findById(id);
+    const user = await User.findById(userId);
     if (!user) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found." });
+      return res.status(404).json({ success: false, message: "User not found." });
     }
 
     const isMatch = await bcrypt.compare(oldPassword, user.password);
     if (!isMatch) {
-      return res
-        .status(401)
-        .json({ success: false, message: "Old password is incorrect." });
+      return res.status(401).json({ success: false, message: "Old password is incorrect." });
     }
+
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     user.password = hashedPassword;
     await user.save();
 
-    return res.status(200).json({
-      success: true,
-      message: "Password has been updated successfully.",
-    });
+    return res.status(200).json(
+      {
+        success: true,
+        message: "Password has been updated successfully.",
+      }
+    );
   } catch (error) {
     console.error("Error in resetPassword:", error);
-    return res
-      .status(500)
-      .json({ success: false, message: "Internal server error." });
+    return res.status(500).json(
+      {
+        success: false,
+        message: "Internal server error."
+      }
+    );
   }
 };
 

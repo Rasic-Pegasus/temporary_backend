@@ -69,24 +69,17 @@ const comparePassword = async (password, hashedPassword) => {
   }
 };
 
-const generateToken = (id) => {
+const generateToken = (id, duration) => {
   try {
-    const token = jwt.sign({ id }, process.env.JWT_SECRET, {
-      expiresIn: "7d",
-    });
+    const token = jwt.sign(
+      { id },
+      process.env.JWT_SECRET,
+      { expiresIn: duration, }
+    );
     return token;
   } catch (err) {
     console.log(err);
   }
-};
-
-const generateResetToken = (userId) => {
-  const payload = {
-    userId,
-    resetPassword: true,
-  };
-
-  return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "15m" });
 };
 
 const verifyResetToken = (token) => {
@@ -112,7 +105,6 @@ module.exports = {
   hashedPassword,
   comparePassword,
   generateToken,
-  generateResetToken,
   verifyResetToken,
   admin,
 };

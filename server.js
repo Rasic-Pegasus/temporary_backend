@@ -22,8 +22,6 @@ app.use(morgan("dev"));
 
 const port = process.env.PORT;
 
-console.log(`PORT: ${port}`);
-
 app.get("/api/test", (_, res) => {
   res.send("App is working fine! Good to go!");
 });

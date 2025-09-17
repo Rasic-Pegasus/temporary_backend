@@ -209,7 +209,7 @@ const updateWebsite = async (req, res) => {
             {
                 success: true,
                 message: "Successfully updated section",
-                data: website
+                data: section.content
             }
         );
     } catch (error) {
