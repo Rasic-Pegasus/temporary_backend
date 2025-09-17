@@ -33,7 +33,7 @@ const registerUser = async (req, res) => {
     if (existingUser) {
       return res
         .status(400)
-        .send({ success: false, message: "Other user is already registered with this email. Please use another email." });
+        .send({ success: false, message: "Email is already registered" });
     }
 
     const hashPassword = await hashedPassword(password);
@@ -78,7 +78,7 @@ const loginUser = async (req, res) => {
     if (!user) {
       return res
         .status(404)
-        .send({ success: false, message: "You are not registered yet. Please register first." });
+        .send({ success: false, message: "User not registered yet" });
     }
 
     const isPasswordMatch = await comparePassword(userPassword, user.password);
@@ -105,13 +105,14 @@ const loginUser = async (req, res) => {
     res.status(500).json(
       {
         success: false,
-        message: "Login error. Please try again.",
+        message: "Login failed",
         error
       }
     );
   }
 };
 
+// send reset-password-url in email to user
 const forgotPassword = async (req, res) => {
   const { email } = req.body;
 
@@ -144,22 +145,26 @@ const forgotPassword = async (req, res) => {
 
     await sgMail.send(msg);
 
-    res.status(200).json({ message: "Password reset email sent." });
+    res.status(200).json({ success: true, message: "Password reset email sent", resetUrl });
   } catch (error) {
     console.error("Error sending password reset email:", error);
-    res.status(500).json({ message: "Failed to send email." });
+    res.status(500).json({ success: false, message: "Failed to send email" });
   }
 };
 
+// reset password api, this api is used alongside forgot-password api
 const resetPassword = async (req, res) => {
-  const { accessToken, newPassword } = req.body;
+  const userId = req.user.id;
+  const { newPassword } = req.body;
 
   try {
-    const decoded = jwt.verify(accessToken, process.env.JWT_SECRET);
+    if (!newPassword) {
+      return res.status(404).json({ message: "Enter new password" });
+    }
 
-    const user = await User.findById(decoded.id);
+    const user = await User.findById(userId);
     if (!user) {
-      return res.status(404).json({ message: "User not found." });
+      return res.status(404).json({ message: "User not found" });
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
@@ -167,30 +172,31 @@ const resetPassword = async (req, res) => {
     user.password = hashedPassword;
     await user.save();
 
-    res.status(200).json({ message: "Password reset successfully." });
+    res.status(200).json({ message: "Password reset successfully" });
   } catch (error) {
     console.error("Error resetting password:", error);
-    res.status(500).json({ message: "Failed to reset password." });
+    res.status(500).json({ message: "Failed to reset password" });
   }
 };
 
+// update password
 const changePassword = async (req, res) => {
   const userId = req.user.id;
   const { oldPassword, newPassword } = req.body;
 
   try {
     if (!oldPassword || !newPassword) {
-      return res.status(400).json({ success: false, message: "Both old and new passwords are required." });
+      return res.status(400).json({ success: false, message: "Both old and new passwords are required" });
     }
 
     const user = await User.findById(userId);
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found." });
+      return res.status(404).json({ success: false, message: "User not found" });
     }
 
     const isMatch = await bcrypt.compare(oldPassword, user.password);
     if (!isMatch) {
-      return res.status(401).json({ success: false, message: "Old password is incorrect." });
+      return res.status(401).json({ success: false, message: "Old password is incorrect" });
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
@@ -201,7 +207,7 @@ const changePassword = async (req, res) => {
     return res.status(200).json(
       {
         success: true,
-        message: "Password has been updated successfully.",
+        message: "Password has been updated successfully",
       }
     );
   } catch (error) {
@@ -209,7 +215,7 @@ const changePassword = async (req, res) => {
     return res.status(500).json(
       {
         success: false,
-        message: "Internal server error."
+        message: "Internal server error"
       }
     );
   }
