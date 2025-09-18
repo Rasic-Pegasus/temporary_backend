@@ -27,8 +27,8 @@ app.get("/api/test", (_, res) => {
 });
 
 app.use("/api/auth", authRoutes);
-app.use("/api/events", eventRoutes);
-app.use("/api/websites", websiteRoutes);
+app.use("/api/event", eventRoutes);
+app.use("/api/website", websiteRoutes);
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);

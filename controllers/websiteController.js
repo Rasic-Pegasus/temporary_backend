@@ -4,6 +4,7 @@ const Template = require("../models/templateModel.js");
 const Website = require("../models/websiteModel.js");
 const sendEmail = require("../helpers/sendEmail");
 const uploadToCloudinary = require("../helpers/uploadToCloudinary.js");
+const _ = require("lodash");
 
 // clone website from template(your first website)
 const cloneWebsiteFromTemplate = async (req, res) => {
@@ -62,7 +63,11 @@ const cloneWebsiteFromTemplate = async (req, res) => {
         const website = await Website.create([{
             belongsToThisEvent: event._id,
             baseTemplate: template._id,
-            sections: template.sections.map(s => ({ sectionName: s.sectionName, content: s.defaultContent }))
+            sections: template.sections.map(s => ({
+                sectionName: s.sectionName,
+                content: s.defaultContent,
+                metadata: s.metadata
+            }))
         }], { session });
 
         // store the cloned template id in the actual event document
@@ -138,7 +143,7 @@ const getWebsite = async (req, res) => {
 };
 
 // edit the cloned website(your main website)
-const updateWebsite = async (req, res) => {
+const updateSection = async (req, res) => {
     const { websiteId, sectionId } = req.params;
     const userId = req.user.id;
     const content = req.body;
@@ -173,43 +178,34 @@ const updateWebsite = async (req, res) => {
             throw error;
         }
 
+        const parsedContent = {};
+
+        // for contents other than text
+        for (const key in content) {
+            _.set(parsedContent, key, content[key]);
+        }
+
+        // if images exist, merge them too
         if (images && images.length > 0) {
-            const uploadedImages = {};
-
             for (const image of images) {
-                const result = await uploadToCloudinary(
-                    image.buffer,
-                    "website_section_images"
-                );
-
-                // if the field already exists, push into array (for gallery/multi-images)
-                if (uploadedImages[image.fieldname]) {
-                    uploadedImages[image.fieldname].push(result.secure_url);
-                } else {
-                    uploadedImages[image.fieldname] = [result.secure_url];
-                }
-            }
-
-            // Merge uploaded images with body content
-            // If only one image was uploaded for a field, store it as string instead of array
-            for (const field in uploadedImages) {
-                if (uploadedImages[field].length === 1) {
-                    content[field] = uploadedImages[field][0];
-                } else {
-                    content[field] = uploadedImages[field];
-                }
+                const result = await uploadToCloudinary(image.buffer, "website_section_images");
+                _.set(parsedContent, image.fieldname, [
+                    ...(parsedContent[image.fieldname] || []),
+                    result.secure_url,
+                ]);
             }
         }
 
-        // Update section content
-        section.content = { ...section.content, ...content };
+        // deep merge with existing content
+        _.merge(section.content, parsedContent);
+
         await website.save();
 
         return res.status(200).json(
             {
                 success: true,
                 message: "Successfully updated section",
-                data: section.content
+                data: section
             }
         );
     } catch (error) {
@@ -373,7 +369,7 @@ const sendEmailToOrganizer = async (req, res) => {
 module.exports = {
     cloneWebsiteFromTemplate,
     getWebsite,
-    updateWebsite,
+    updateSection,
     getPublicWebsite,
     deleteWebsite,
     sendEmailToOrganizer
