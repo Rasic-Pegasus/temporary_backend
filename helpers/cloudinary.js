@@ -14,4 +14,13 @@ function uploadToCloudinary(buffer, folder) {
     });
 }
 
-module.exports = uploadToCloudinary;
+async function deleteFromCloudinary(imagesToDelete) {
+    const deletions = imagesToDelete.map((url) => {
+        const publicId = url.split("/").pop().split(".")[0];
+        return cloudinary.uploader.destroy(`website_section_images/${publicId}`, { resource_type: "image" });
+    });
+    await Promise.all(deletions);
+}
+
+
+module.exports = { uploadToCloudinary, deleteFromCloudinary };

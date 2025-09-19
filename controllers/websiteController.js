@@ -3,7 +3,7 @@ const Event = require("../models/eventModel.js");
 const Template = require("../models/templateModel.js");
 const Website = require("../models/websiteModel.js");
 const sendEmail = require("../helpers/sendEmail");
-const uploadToCloudinary = require("../helpers/uploadToCloudinary.js");
+const { uploadToCloudinary, deleteFromCloudinary } = require("../helpers/cloudinary.js");
 const _ = require("lodash");
 
 // clone website from template(your first website)
@@ -178,26 +178,56 @@ const updateSection = async (req, res) => {
             throw error;
         }
 
+        console.log("content:", content);
+
         const parsedContent = {};
+
+        console.log("parsedContent before:", parsedContent)
 
         // for contents other than text
         for (const key in content) {
-            _.set(parsedContent, key, content[key]);
+            if (key !== "imagesToRemove") _.set(parsedContent, key, content[key]);
         }
 
         // if images exist, merge them too
         if (images && images.length > 0) {
             for (const image of images) {
                 const result = await uploadToCloudinary(image.buffer, "website_section_images");
-                _.set(parsedContent, image.fieldname, [
-                    ...(parsedContent[image.fieldname] || []),
-                    result.secure_url,
-                ]);
+                _.set(parsedContent, image.fieldname, result.secure_url);
+            }
+        }
+
+        // send this in req.body to delete image
+        // {
+        //     "imagesToRemove": {
+        //         "galleryImages": ["url1", "url2"],
+        //         "bannerImages": ["url3"],
+        //         features[0].icon[0]: ["url1"],
+        //     }
+        // }
+
+        // delete images from cloudinary and url from corresponding prop as well
+        if (content.imagesToRemove) {
+            const imagesToRemove = JSON.parse(content.imagesToRemove);
+
+            for (const key in imagesToRemove) {
+                const urlsToDelete = imagesToRemove[key];
+                
+                // remove from cloudinary
+                await deleteFromCloudinary(urlsToDelete);
+                
+                const existing = _.get(section.content, key, []);
+                const updated = existing.filter((url) => !urlsToDelete.includes(url));
+
+                console.log("updateddddddddd", updated)
+
+                _.set(section.content, key, updated);
             }
         }
 
         // deep merge with existing content
         _.merge(section.content, parsedContent);
+        section.markModified("content");
 
         await website.save();
 
