@@ -286,6 +286,12 @@ const publishWebsite = async (req, res) => {
             throw error;
         }
 
+        if (website.published || website.subdomain || website.url) {
+            const error = new Error("Website already published");
+            error.statusCode = 400;
+            throw error;
+        }
+
         // check website ownership
         if (website.belongsToThisEvent.organizer.toString() !== userId.toString()) {
             const error = new Error("Unauthorized");
@@ -294,6 +300,7 @@ const publishWebsite = async (req, res) => {
         }
 
         website.published = true;
+        website.subdomain = subdomain;
         website.url = `https://${subdomain.toLowerCase()}.${process.env.DOMAIN_NAME}`
         await website.save();
 

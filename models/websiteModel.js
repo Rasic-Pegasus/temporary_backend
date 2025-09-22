@@ -14,7 +14,7 @@ const websiteSchema = new mongoose.Schema(
         sections: [websiteSectionSchema],
         subdomain: { type: String, unique: true, sparse: true },
         published: { type: Boolean, default: false },
-        websiteUrl: { type: String, unique: true }
+        url: { type: String, unique: true }
     },
     {
         timestamps: true
