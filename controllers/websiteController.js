@@ -212,10 +212,10 @@ const updateSection = async (req, res) => {
 
             for (const key in imagesToRemove) {
                 const urlsToDelete = imagesToRemove[key];
-                
+
                 // remove from cloudinary
                 await deleteFromCloudinary(urlsToDelete);
-                
+
                 const existing = _.get(section.content, key, []);
                 const updated = existing.filter((url) => !urlsToDelete.includes(url));
 
@@ -252,20 +252,82 @@ const updateSection = async (req, res) => {
     }
 };
 
-// get website for visitor
-const getPublicWebsite = async (req, res) => {
+// publish website - create subdomain and make app accessible through link
+const publishWebsite = async (req, res) => {
     const { websiteId } = req.params;
+    const { subdomain } = req.body;
+    const userId = req.user.id;
 
     try {
-        const website = await Website.findById(websiteId)
+        // validate subdomain
+        const subdomainRegex = /^[a-z0-9-]{2,25}$/i;
+        if (!subdomain || !subdomainRegex.test(subdomain)) {
+            const error = new Error("Invaid subdomain format");
+            error.statusCode = 400;
+            throw error;
+        }
+
+        // check if website with requested subdomain name already exists
+        const existing = await Website.findOne({ subdomain });
+        if (existing) {
+            const error = new Error("Subdomain already taken");
+            error.statusCode = 400;
+            throw error;
+        }
+
+        const website = await Website.findById(websiteId).populate({
+            path: "belongsToThisEvent",
+            select: "organizer",
+        });
+
+        if (!website) {
+            const error = new Error("Website not found");
+            error.statusCode = 404;
+            throw error;
+        }
+
+        // check website ownership
+        if (website.belongsToThisEvent.organizer.toString() !== userId.toString()) {
+            const error = new Error("Unauthorized");
+            error.statusCode = 403;
+            throw error;
+        }
+
+        website.published = true;
+        website.url = `https://${subdomain.toLowerCase()}.${process.env.DOMAIN_NAME}`
+        await website.save();
+
+        return res.status(200).json(
+            {
+                success: true,
+                message: "Website published successfully",
+                data: website
+            }
+        );
+    } catch (error) {
+        console.error(error);
+
+        const statusCode = error.statusCode || 500;
+        const message = error.message || "Internal server error";
+        res.status(statusCode).json(
+            {
+                success: false,
+                message
+            }
+        );
+    }
+}
+
+// get website for visitor
+const getPublicWebsite = async (req, res) => {
+    const { subdomain } = req.params;
+
+    try {
+        const website = await Website.findOne({ subdomain, published: true })
             .populate({
                 path: "belongsToThisEvent",
                 select: "eventName description date time location email",
             })
-            .populate({
-                path: "baseTemplate",
-                select: "templateName sections",
-            });
 
         if (!website) {
             const error = new Error("Website not found");
@@ -402,5 +464,6 @@ module.exports = {
     updateSection,
     getPublicWebsite,
     deleteWebsite,
+    publishWebsite,
     sendEmailToOrganizer
 }

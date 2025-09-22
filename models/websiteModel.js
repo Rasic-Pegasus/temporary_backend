@@ -12,6 +12,9 @@ const websiteSchema = new mongoose.Schema(
         belongsToThisEvent: { type: mongoose.Schema.Types.ObjectId, ref: "Event", unique: true },
         baseTemplate: { type: mongoose.Schema.Types.ObjectId, ref: "Template" },
         sections: [websiteSectionSchema],
+        subdomain: { type: String, unique: true, sparse: true },
+        published: { type: Boolean, default: false },
+        websiteUrl: { type: String, unique: true }
     },
     {
         timestamps: true
