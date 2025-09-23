@@ -15,6 +15,8 @@ const userSchema = new mongoose.Schema(
 
     // array of reference to event specific to particular user
     events: [{ type: mongoose.Schema.Types.ObjectId, ref: "Event", unique: true }],
+
+    refreshToken: { type: String }
   },
   {
     timestamps: true

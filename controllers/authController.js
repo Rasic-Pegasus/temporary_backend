@@ -1,9 +1,8 @@
 const User = require("../models/userModel");
-const { hashedPassword, comparePassword, generateToken } = require("../middleware/auth");
+const { hashedPassword, comparePassword, generateToken, verifyToken } = require("../middleware/auth");
 const bcrypt = require("bcryptjs");
 const { sgMail, senderEmailAddress } = require("../config/sendgrid");
 const validator = require("validator");
-const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
 
 dotenv.config();
@@ -88,7 +87,11 @@ const loginUser = async (req, res) => {
         .send({ success: false, message: "Incorrect password" });
     }
 
-    const accessToken = generateToken(user._id, "7d");
+    // both tokens expires after 7days, needs to be changes in production mode
+    const accessToken = generateToken(user._id, process.env.JWT_SECRET_ACCESS, "7d");
+    const refreshToken = generateToken(user._id, process.env.JWT_SECRET_REFRESH, "7d");
+
+    await User.findByIdAndUpdate(user._id, { refreshToken });
 
     const { password, ...userWithoutPassword } = user.toObject();
 
@@ -98,6 +101,7 @@ const loginUser = async (req, res) => {
         message: "Successfully logged in",
         data: userWithoutPassword,
         accessToken,
+        refreshToken
       }
     );
   } catch (error) {
@@ -127,7 +131,7 @@ const forgotPassword = async (req, res) => {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    const resetToken = generateToken(user._id, "5m");
+    const resetToken = generateToken(user._id, process.env.JWT_SECRET_ACCESS, "5m");
 
     if (!resetToken) {
       return res.status(500).json({ success: false, message: "Failed to generate reset token" });
@@ -221,10 +225,55 @@ const changePassword = async (req, res) => {
   }
 };
 
+// generate new access token
+const refreshToken = async (req, res) => {
+  const errorMessage = "Invalid refresh token!";
+
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith("Bearer ")) {
+      const error = new Error(errorMessage);
+      error.statusCode = 403;
+      throw error;
+    }
+
+    const refreshToken = authHeader.split(" ")[1];
+    if (!refreshToken) {
+      const error = new Error(errorMessage);
+      error.statusCode = 403;
+      throw error;
+    }
+
+    // verify refresh token
+    const decoded = verifyToken(refreshToken, process.env.JWT_SECRET_REFRESH);
+    const userId = decoded.id;
+
+    // 7d for test only, must change expiry duration for production mode
+    const accessToken = generateToken(userId, process.env.JWT_SECRET_ACCESS, "7d");
+
+    res.status(200).json({
+      success: true,
+      accessToken,
+    });
+  } catch (error) {
+    console.error(error);
+
+    const statusCode = error.statusCode || 500;
+    const message = error.message || "Internal server error";
+    res.status(statusCode).json(
+      {
+        success: false,
+        message
+      }
+    );
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
   forgotPassword,
   resetPassword,
   changePassword,
+  refreshToken
 };

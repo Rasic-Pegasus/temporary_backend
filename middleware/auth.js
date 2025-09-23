@@ -25,7 +25,7 @@ const authenticate = async (req, res, next) => {
       throw error;
     }
 
-    const decoded = jwt.verify(accessToken, process.env.JWT_SECRET);
+    const decoded = verifyToken(accessToken, process.env.JWT_SECRET_ACCESS);
     req.user = decoded;
 
     const user = await User.findById(decoded.id);
@@ -69,11 +69,11 @@ const comparePassword = async (password, hashedPassword) => {
   }
 };
 
-const generateToken = (id, duration) => {
+const generateToken = (id, secret, duration) => {
   try {
     const token = jwt.sign(
       { id },
-      process.env.JWT_SECRET,
+      secret,
       { expiresIn: duration, }
     );
     return token;
@@ -82,9 +82,9 @@ const generateToken = (id, duration) => {
   }
 };
 
-const verifyResetToken = (token) => {
+const verifyToken = (token, secret) => {
   try {
-    return jwt.verify(token, process.env.JWT_SECRET);
+    return jwt.verify(token, secret);
   } catch (error) {
     return null; // If token is invalid or expired
   }
@@ -105,6 +105,6 @@ module.exports = {
   hashedPassword,
   comparePassword,
   generateToken,
-  verifyResetToken,
+  verifyToken,
   admin,
 };
