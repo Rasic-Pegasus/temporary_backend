@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const eventSchema = new mongoose.Schema(
     {
         // user reference who created the event
-        organizer: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // opt
+        organizer: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
 
         // event details
         eventName: { type: String },
@@ -15,7 +15,7 @@ const eventSchema = new mongoose.Schema(
         phone: { type: String }, // for viewers
         email: { type: String }, // for viewers
         template: { type: mongoose.Schema.Types.ObjectId, ref: "Template" },
-        website: { type: mongoose.Schema.Types.ObjectId, ref: "Website" },
+        website: { type: mongoose.Schema.Types.ObjectId, ref: "Website", unique: true },
         status: {
             type: String,
             enum: ["planned", "completed", "failed"], // can be easily changed later

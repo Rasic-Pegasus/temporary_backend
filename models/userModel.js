@@ -14,7 +14,7 @@ const userSchema = new mongoose.Schema(
     country: { type: String },
 
     // array of reference to event specific to particular user
-    events: [{ type: mongoose.Schema.Types.ObjectId, ref: "Event" }],
+    events: [{ type: mongoose.Schema.Types.ObjectId, ref: "Event", unique: true }],
   },
   {
     timestamps: true

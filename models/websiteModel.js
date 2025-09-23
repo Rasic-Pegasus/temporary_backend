@@ -10,7 +10,7 @@ const websiteSectionSchema = new mongoose.Schema(
 const websiteSchema = new mongoose.Schema(
     {
         belongsToThisEvent: { type: mongoose.Schema.Types.ObjectId, ref: "Event", unique: true },
-        baseTemplate: { type: mongoose.Schema.Types.ObjectId, ref: "Template" },
+        baseTemplate: { type: mongoose.Schema.Types.ObjectId, ref: "Template"},
         sections: [websiteSectionSchema],
         subdomain: { type: String, unique: true, sparse: true },
         published: { type: Boolean, default: false },
@@ -20,5 +20,7 @@ const websiteSchema = new mongoose.Schema(
         timestamps: true
     }
 );
+
+websiteSchema.index({ subdomain: 1, published: 1 });
 
 module.exports = mongoose.model("Website", websiteSchema);
