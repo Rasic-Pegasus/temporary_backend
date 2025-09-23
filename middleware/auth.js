@@ -10,7 +10,6 @@ const authenticate = async (req, res, next) => {
 
   try {
     const authHeader = req.headers.authorization;
-
     if (!authHeader?.startsWith("Bearer ")) {
       const error = new Error(errorMessage);
       error.statusCode = 403;
@@ -18,7 +17,6 @@ const authenticate = async (req, res, next) => {
     }
 
     const accessToken = authHeader.split(" ")[1];
-
     if (!accessToken) {
       const error = new Error(errorMessage);
       error.statusCode = 403;

@@ -73,7 +73,6 @@ const loginUser = async (req, res) => {
     }
 
     const user = await User.findOne({ email });
-
     if (!user) {
       return res
         .status(404)
@@ -99,9 +98,10 @@ const loginUser = async (req, res) => {
       {
         success: true,
         message: "Successfully logged in",
-        data: userWithoutPassword,
-        accessToken,
-        refreshToken
+        data: {
+          ...userWithoutPassword, // saved in db
+          accessToken, // not saved in db
+        }
       }
     );
   } catch (error) {
