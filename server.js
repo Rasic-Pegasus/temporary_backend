@@ -22,17 +22,17 @@ app.use(morgan("dev"));
 
 const port = process.env.PORT;
 
-app.get("/api/test", (_, res) => {
+app.get("/test", (_, res) => {
   res.status(200).json({
     success: true,
     message: "App is working fine! Good to go!"
   });
 });
 
-app.use("/api/auth", authRoutes);
-app.use("/api/template", templateRoutes);
-app.use("/api/event", eventRoutes);
-app.use("/api/website", websiteRoutes);
+app.use("/auth", authRoutes);
+app.use("/template", templateRoutes);
+app.use("/event", eventRoutes);
+app.use("/website", websiteRoutes);
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);

@@ -35,4 +35,27 @@ const addTemplate = async (req, res) => {
     }
 }
 
-module.exports = { addTemplate }
+const getAllTemplates = async (_, res) => {
+    try {
+        const templates = await Template.find({})
+            .sort({ createdAt: -1 }); // newest first
+
+        res.status(200).json(
+            {
+                success: true,
+                message: "Successfully fetched templates",
+                data: templates,
+            }
+        );
+    } catch (error) {
+        console.error("Error fetching templates:", error);
+        res.status(500).json(
+            {
+                success: false,
+                message: "Failed to fetch templates"
+            }
+        );
+    }
+}
+
+module.exports = { addTemplate, getAllTemplates }
