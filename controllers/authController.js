@@ -3,20 +3,17 @@ const { hashedPassword, comparePassword, generateToken, verifyToken } = require(
 const bcrypt = require("bcryptjs");
 const { sgMail, senderEmailAddress } = require("../config/sendgrid");
 const validator = require("validator");
-const dotenv = require("dotenv");
-
-dotenv.config();
 
 // register new user/event organizer
 const registerUser = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { username, email, password } = req.body;
     console.log('Incoming request for registering new user:\n', req.body);
 
     // basic validation
-    if (!name || !email || !password) {
+    if (!username || !email || !password) {
       return res.status(400).send({
-        error: "Name, email, and password are required",
+        error: "Username, email, and password are required",
       });
     }
     if (!validator.isEmail(email)) {
@@ -38,7 +35,7 @@ const registerUser = async (req, res) => {
     const hashPassword = await hashedPassword(password);
 
     User.create({
-      name,
+      username,
       email,
       password: hashPassword,
     });
@@ -90,9 +87,13 @@ const loginUser = async (req, res) => {
     const accessToken = generateToken(user._id, process.env.JWT_SECRET_ACCESS, "7d");
     const refreshToken = generateToken(user._id, process.env.JWT_SECRET_REFRESH, "7d");
 
-    await User.findByIdAndUpdate(user._id, { refreshToken });
+    const updatedUser = await User.findByIdAndUpdate(
+      user._id,
+      { refreshToken },
+      { new: true }
+    );
 
-    const { password, ...userWithoutPassword } = user.toObject();
+    const { password, ...userWithoutPassword } = updatedUser.toObject();
 
     res.status(200).json(
       {

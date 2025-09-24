@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const userSchema = new mongoose.Schema(
   {
     // creds used during signup/login
-    userName: { type: String }, // user/organization name
+    username: { type: String }, // user/organization name
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
 
@@ -14,7 +14,7 @@ const userSchema = new mongoose.Schema(
     country: { type: String },
 
     // array of reference to event specific to particular user
-    events: [{ type: mongoose.Schema.Types.ObjectId, ref: "Event", unique: true }],
+    events: [{ type: mongoose.Schema.Types.ObjectId, ref: "Event" }],
 
     refreshToken: { type: String }
   },

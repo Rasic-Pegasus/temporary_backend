@@ -1,7 +1,9 @@
+require("dotenv").config();
+
 const express = require("express");
-const dotenv = require("dotenv");
 
 const authRoutes = require("./routes/authRoutes");
+const templateRoutes = require("./routes/templateRoutes");
 const eventRoutes = require("./routes/eventRoutes");
 const websiteRoutes = require("./routes/websiteRoutes");
 
@@ -10,8 +12,6 @@ const cors = require("cors");
 const morgan = require("morgan");
 
 const app = express();
-
-dotenv.config();
 
 connectDB();
 
@@ -23,10 +23,14 @@ app.use(morgan("dev"));
 const port = process.env.PORT;
 
 app.get("/api/test", (_, res) => {
-  res.send("App is working fine! Good to go!");
+  res.status(200).json({
+    success: true,
+    message: "App is working fine! Good to go!"
+  });
 });
 
 app.use("/api/auth", authRoutes);
+app.use("/api/template", templateRoutes);
 app.use("/api/event", eventRoutes);
 app.use("/api/website", websiteRoutes);
 

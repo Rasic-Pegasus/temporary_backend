@@ -1,9 +1,6 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const dotenv = require("dotenv");
 const User = require("../models/userModel");
-
-dotenv.config();
 
 const authenticate = async (req, res, next) => {
   const errorMessage = "Authentication failed. Invalid token or missing token!";
