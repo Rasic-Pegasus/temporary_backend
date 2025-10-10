@@ -6,23 +6,19 @@ const authenticate = async (req, res, next) => {
   const errorMessage = "Authentication failed. Invalid token or missing token!";
 
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith("Bearer ")) {
-      const error = new Error(errorMessage);
-      error.statusCode = 403;
-      throw error;
-    }
-
-    const accessToken = authHeader.split(" ")[1];
+    // Get the token from the cookies
+    const accessToken = req.cookies.access_token;
     if (!accessToken) {
       const error = new Error(errorMessage);
       error.statusCode = 403;
       throw error;
     }
 
+    // Verify the access token
     const decoded = verifyToken(accessToken, process.env.JWT_SECRET_ACCESS);
     req.user = decoded;
 
+    // Check if the user exists in the database
     const user = await User.findById(decoded.id);
     if (!user) {
       const error = new Error("User doesn't exist!");
@@ -30,6 +26,7 @@ const authenticate = async (req, res, next) => {
       throw error;
     }
 
+    // If everything is good, proceed to next middleware/api
     next();
   } catch (error) {
     console.error(error);

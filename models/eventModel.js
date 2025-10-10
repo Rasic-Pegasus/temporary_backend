@@ -15,10 +15,11 @@ const eventSchema = new mongoose.Schema(
         phone: { type: String }, // for viewers
         email: { type: String }, // for viewers
         template: { type: mongoose.Schema.Types.ObjectId, ref: "Template" },
-        website: { type: mongoose.Schema.Types.ObjectId, ref: "Website", unique: true },
+        website: { type: mongoose.Schema.Types.ObjectId, ref: "Website" },
         status: {
             type: String,
             enum: ["planned", "completed", "failed"], // can be easily changed later
+            default: "planned"
         },
     },
     {
