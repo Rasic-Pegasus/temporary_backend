@@ -241,18 +241,11 @@ const changePassword = async (req, res) => {
 };
 
 // generate new access token
-const refreshToken = async (req, res) => {
+const refreshAccessToken = async (req, res) => {
   const errorMessage = "Invalid refresh token!";
 
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith("Bearer ")) {
-      const error = new Error(errorMessage);
-      error.statusCode = 403;
-      throw error;
-    }
-
-    const refreshToken = authHeader.split(" ")[1];
+    const refreshToken = req.cookies.refresh_token;
     if (!refreshToken) {
       const error = new Error(errorMessage);
       error.statusCode = 403;
@@ -264,11 +257,18 @@ const refreshToken = async (req, res) => {
     const userId = decoded.id;
 
     // 7d for test only, must change expiry duration for production mode
-    const accessToken = generateToken(userId, process.env.JWT_SECRET_ACCESS, "7d");
+    const newAccessToken = generateToken(userId, process.env.JWT_SECRET_ACCESS, "7d");
+
+    res.cookie("access_token", newAccessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
 
     res.status(200).json({
       success: true,
-      accessToken,
+      message: "Access token refreshed",
     });
   } catch (error) {
     console.error(error);
@@ -290,5 +290,5 @@ module.exports = {
   forgotPassword,
   resetPassword,
   changePassword,
-  refreshToken
+  refreshAccessToken
 };
