@@ -114,8 +114,7 @@ const loginUser = async (req, res) => {
         success: true,
         message: "Successfully logged in",
         data: {
-          ...userWithoutPassword, // saved in db
-          accessToken, // not saved in db
+          ...userWithoutPassword
         }
       }
     );
@@ -130,6 +129,69 @@ const loginUser = async (req, res) => {
     );
   }
 };
+
+// verify access token to acknowledge user auth state
+const checkAuthState = async (req, res) => {
+  const userId = req.user.id;
+
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      const error = new Error("User doesn't exist!");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    res.status(200).json(
+      {
+        success: true,
+        message: "User is authenticated",
+        data: { ...user.toObject() }
+      }
+    );
+  } catch (error) {
+    console.log(error);
+    res.status(500).json(
+      {
+        success: false,
+        message: "User authentication failed",
+        error
+      }
+    );
+  }
+};
+
+// logout user by clearing tokens stored in cookies
+const logoutUser = async (req, res) => {
+  const userId = req.user.id;
+
+  const user = await User.findById(userId);
+  if (!user) {
+    const error = new Error("User doesn't exist!");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  user.refreshToken = null;
+  await user.save();
+
+  res.clearCookie("access_token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "Strict",
+  });
+
+  res.clearCookie("refresh_token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "Strict",
+  });
+
+  return res.status(200).json({
+    success: true,
+    message: "Logged out successfully",
+  });
+}
 
 // send reset-password-url in email to user
 const forgotPassword = async (req, res) => {
@@ -287,6 +349,8 @@ const refreshAccessToken = async (req, res) => {
 module.exports = {
   registerUser,
   loginUser,
+  checkAuthState,
+  logoutUser,
   forgotPassword,
   resetPassword,
   changePassword,

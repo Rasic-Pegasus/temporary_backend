@@ -2,16 +2,18 @@ const Template = require("../models/templateModel.js");
 
 const addTemplate = async (req, res) => {
     try {
-        const { templateName, sections } = req.body;
+        const { templateName, description, previewImage, sections } = req.body;
 
-        if (!templateName || !sections) {
-            const error = new Error("Missing 'templateName' or 'sections'");
+        if (!templateName || !description || !previewImage || !sections) {
+            const error = new Error("Missing one or more required fields. Recheck and verify complete data are sent!");
             error.statusCode = 400;
             throw error;
         }
 
         const newTemplate = new Template({
             templateName,
+            description,
+            previewImage,
             sections,
         });
 

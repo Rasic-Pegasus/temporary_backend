@@ -19,8 +19,19 @@ connectDB();
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors());
 app.use(morgan("dev"));
+
+const FRONTEND_URL = process.env.FRONTEND_URL;
+
+// CORS configuration
+const corsOptions = {
+  origin: FRONTEND_URL,
+  credentials: true,
+  methods: ['GET', 'POST', 'PATCH', 'DELETE'],
+  allowedHeaders: ['Content-Type'],
+};
+
+app.use(cors(corsOptions));
 
 const port = process.env.PORT;
 

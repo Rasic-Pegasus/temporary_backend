@@ -12,6 +12,8 @@ const templateSectionSchema = new mongoose.Schema(
 const templateSchema = new mongoose.Schema(
     {
         templateName: { type: String, required: true, unique: true },
+        description: {type: String, required: true },
+        previewImage: {type: String, required: true},
         sections: [templateSectionSchema],
     }
 );
