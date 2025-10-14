@@ -65,8 +65,7 @@ const cloneWebsiteFromTemplate = async (req, res) => {
             baseTemplate: template._id,
             sections: template.sections.map(s => ({
                 sectionName: s.sectionName,
-                content: s.defaultContent,
-                metadata: s.metadata
+                content: s.defaultContent
             }))
         }], { session });
 
@@ -80,7 +79,9 @@ const cloneWebsiteFromTemplate = async (req, res) => {
             {
                 success: true,
                 message: "You have selected the template. Now you can proceed to its customization.",
-                data: website[0]
+                data: {
+                    websiteId: website[0]._id
+                }
             }
         );
     } catch (error) {
@@ -112,7 +113,7 @@ const getWebsite = async (req, res) => {
             })
             .populate({
                 path: "baseTemplate",
-                select: "templateName sections",
+                select: "templateName",
             });
 
         if (!website) {
