@@ -9,6 +9,7 @@ const websiteSectionSchema = new mongoose.Schema(
 
 const websiteSchema = new mongoose.Schema(
     {
+        type: {type: String, default: "website"},
         belongsToThisEvent: { type: mongoose.Schema.Types.ObjectId, ref: "Event", unique: true },
         baseTemplate: { type: mongoose.Schema.Types.ObjectId, ref: "Template"},
         sections: [websiteSectionSchema],

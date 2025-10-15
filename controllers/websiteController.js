@@ -65,7 +65,7 @@ const cloneWebsiteFromTemplate = async (req, res) => {
             baseTemplate: template._id,
             sections: template.sections.map(s => ({
                 sectionName: s.sectionName,
-                content: s.defaultContent
+                content: s.content
             }))
         }], { session });
 
@@ -143,6 +143,51 @@ const getWebsite = async (req, res) => {
     }
 };
 
+// get section of particular website
+const getSection = async (req, res) => {
+    const { websiteId, sectionId } = req.params;
+
+    try {
+        const website = await Website.findById(websiteId)
+            .populate({
+                path: "belongsToThisEvent",
+                select: "organizer",
+            });
+
+        if (!website) {
+            const error = new Error("Website not found");
+            error.statusCode = 404;
+            throw error;
+        }
+
+        const section = website.sections.find(sec => sec._id.toString() === sectionId);
+        if (!section) {
+            const error = new Error("Section doesn't exist in the website");
+            error.statusCode = 404;
+            throw error;
+        }
+
+        return res.status(200).json(
+            {
+                success: true,
+                message: "Successfully fetched section",
+                data: section
+            }
+        );
+    } catch (error) {
+        console.error(error);
+
+        const statusCode = error.statusCode || 500;
+        const message = error.message || "Internal server error";
+        res.status(statusCode).json(
+            {
+                success: false,
+                message
+            }
+        );
+    }
+}
+
 // edit the cloned website(your main website)
 const updateSection = async (req, res) => {
     const { websiteId, sectionId } = req.params;
@@ -194,7 +239,7 @@ const updateSection = async (req, res) => {
         if (images && images.length > 0) {
             for (const image of images) {
                 const result = await uploadToCloudinary(image.buffer, "website_section_images");
-                _.set(parsedContent, image.fieldname, result.secure_url);
+                _.set(parsedContent, image.fieldname, [result.secure_url]);
             }
         }
 
@@ -469,6 +514,7 @@ const sendEmailToOrganizer = async (req, res) => {
 module.exports = {
     cloneWebsiteFromTemplate,
     getWebsite,
+    getSection,
     updateSection,
     getPublicWebsite,
     deleteWebsite,
