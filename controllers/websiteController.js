@@ -228,8 +228,6 @@ const updateSection = async (req, res) => {
 
         const parsedContent = {};
 
-        console.log("parsedContent before:", parsedContent)
-
         // for contents other than text
         for (const key in content) {
             if (key !== "imagesToRemove") _.set(parsedContent, key, content[key]);
@@ -271,6 +269,8 @@ const updateSection = async (req, res) => {
             }
         }
 
+        console.log("🚀 ~ updateSection ~ parsedContent(after):", parsedContent)
+
         // deep merge with existing content
         _.merge(section.content, parsedContent);
         section.markModified("content");
@@ -297,6 +297,68 @@ const updateSection = async (req, res) => {
         );
     }
 };
+
+// update whole website section content
+const saveWebsite = async (req, res) => {
+    const { websiteId } = req.params;
+    const { sections } = req.body;
+
+    console.log("🚀 ~ saveWebsite ~ sections:", sections);
+
+    if (!Array.isArray(sections)) {
+        return res.status(400).json({
+            success: false,
+            message: "Sections must be an array",
+        });
+    }
+
+    try {
+        const website = await Website.findById(websiteId);
+        if (!website) {
+            const error = new Error("Website not found");
+            error.statusCode = 404;
+            throw error;
+        }
+
+        // Loop through incoming sections and update the content that matches with the incoming sectionName to sectionName in database
+        sections.forEach((incoming) => {
+            if (
+                incoming &&
+                typeof incoming.sectionName === "string" &&
+                incoming.content !== undefined
+            ) {
+                // Find the matching section in the existing document
+                const existingSection = website.sections.find(
+                    (s) => s.sectionName === incoming.sectionName
+                );
+
+                if (existingSection) {
+                    // Only update the content field
+                    existingSection.content = incoming.content;
+                }
+            }
+        });
+
+        await website.save();
+
+        res.status(200).json({
+            success: true,
+            message: "Website updated successfully",
+            data: website,
+        });
+    } catch (error) {
+        console.error(error);
+
+        const statusCode = error.statusCode || 500;
+        const message = error.message || "Internal server error";
+        res.status(statusCode).json(
+            {
+                success: false,
+                message
+            }
+        );
+    }
+}
 
 // publish website - create subdomain and make app accessible through link
 const publishWebsite = async (req, res) => {
@@ -347,7 +409,7 @@ const publishWebsite = async (req, res) => {
 
         website.published = true;
         website.subdomain = subdomain;
-        website.url = `https://${subdomain.toLowerCase()}.${process.env.DOMAIN_NAME}`
+        website.url = `https://${subdomain.toLowerCase()}.${process.env.DOMAIN_NAME}`;
         await website.save();
 
         return res.status(200).json(
@@ -515,6 +577,7 @@ module.exports = {
     cloneWebsiteFromTemplate,
     getWebsite,
     getSection,
+    saveWebsite,
     updateSection,
     getPublicWebsite,
     deleteWebsite,
