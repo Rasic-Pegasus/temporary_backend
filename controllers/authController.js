@@ -189,12 +189,16 @@ const logoutUser = async (req, res) => {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
+    domain: '.tempevents.local',
+    path: '/',
   });
 
   res.clearCookie("refresh_token", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
+    domain: '.tempevents.com',
+    path: '/',
   });
 
   return res.status(200).json({
