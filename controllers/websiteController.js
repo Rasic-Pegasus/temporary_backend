@@ -409,7 +409,8 @@ const publishWebsite = async (req, res) => {
 
         website.published = true;
         website.subdomain = subdomain;
-        website.url = `https://${subdomain.toLowerCase()}.${process.env.DOMAIN_NAME}`;
+        website.url = `http://${subdomain.toLowerCase()}.${process.env.DOMAIN_NAME}`;
+        // http://{subdomain-name}.localhost:5173/
         await website.save();
 
         return res.status(200).json(

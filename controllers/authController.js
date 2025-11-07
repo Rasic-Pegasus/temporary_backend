@@ -93,19 +93,29 @@ const loginUser = async (req, res) => {
       { new: true }
     );
 
-    res.cookie("access_token", accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "Strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
+    const DEV_COOKIE = {
+      httpOnly: true, // prevents xxs attacks
+      secure: false, //send over both http/https protocol
+      sameSite: 'lax',
+      domain: '.tempevents.local',
+      path: '/', // cookie sent and accessible to the whole site
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    };
 
-    res.cookie("refresh_token", refreshToken, {
+    // PROD cookie options (cross-site, https)
+    const PROD_COOKIE = {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "Strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
+      secure: true,
+      sameSite: 'none',
+      domain: '.tempevents.com',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    };
+
+    const COOKIE = process.env.NODE_ENV === 'production' ? PROD_COOKIE : DEV_COOKIE;
+
+    res.cookie('access_token', accessToken, COOKIE);
+    res.cookie('refresh_token', refreshToken, COOKIE);
 
     const { password, ...userWithoutPassword } = updatedUser.toObject();
 
@@ -178,13 +188,13 @@ const logoutUser = async (req, res) => {
   res.clearCookie("access_token", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "Strict",
+    sameSite: "lax",
   });
 
   res.clearCookie("refresh_token", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "Strict",
+    sameSite: "lax",
   });
 
   return res.status(200).json({
@@ -324,7 +334,9 @@ const refreshAccessToken = async (req, res) => {
     res.cookie("access_token", newAccessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "Strict",
+      sameSite: "lax",
+      domain: '.tempevents.local',
+      path: '/',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
