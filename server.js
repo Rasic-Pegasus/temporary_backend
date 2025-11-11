@@ -30,7 +30,11 @@ const corsOptions = {
     const whitelist = [
       FRONTEND_URL, // CMS serving mai domain/origin(not subdomain)
     ];
-    const subdomainRgx = /^http:\/\/[a-z0-9-]+\.tempevents\.local:3000$/i; // viewer subdomains
+    const DOMAIN_NAME = process.env.DOMAIN_NAME || 'tempevents.local';
+    const isProduction = process.env.NODE_ENV === 'production';
+    const protocol = isProduction ? 'https' : 'http';
+    const port = isProduction ? '' : ':3000';
+    const subdomainRgx = new RegExp(`^${protocol}://[a-z0-9-]+\\.${DOMAIN_NAME.replace('.', '\\.')}${port}$`, 'i');
 
     if (whitelist.includes(origin) || subdomainRgx.test(origin)) {
       return cb(null, true);
@@ -60,7 +64,7 @@ app.use("/event", eventRoutes);
 app.use("/website", websiteRoutes);
 
 app.listen(PORT, () => {
-  console.log(`API on http://api.tempevents.local:${PORT}`);
+  console.log(`API server is running properly✅`);
 });
 
 // backend is hosted on localhost:5000

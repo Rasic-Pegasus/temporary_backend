@@ -93,11 +93,14 @@ const loginUser = async (req, res) => {
       { new: true }
     );
 
+    const DOMAIN_NAME = process.env.DOMAIN_NAME || 'tempevents.local';
+    const isProduction = process.env.NODE_ENV === 'production';
+
     const DEV_COOKIE = {
       httpOnly: true, // prevents xxs attacks
       secure: false, //send over both http/https protocol
       sameSite: 'lax',
-      domain: '.tempevents.local',
+      domain: `.${DOMAIN_NAME}`,
       path: '/', // cookie sent and accessible to the whole site
       maxAge: 7 * 24 * 60 * 60 * 1000,
     };
@@ -107,12 +110,12 @@ const loginUser = async (req, res) => {
       httpOnly: true,
       secure: true,
       sameSite: 'none',
-      domain: '.tempevents.com',
+      domain: `.${DOMAIN_NAME}`,
       path: '/',
       maxAge: 7 * 24 * 60 * 60 * 1000,
     };
 
-    const COOKIE = process.env.NODE_ENV === 'production' ? PROD_COOKIE : DEV_COOKIE;
+    const COOKIE = isProduction ? PROD_COOKIE : DEV_COOKIE;
 
     res.cookie('access_token', accessToken, COOKIE);
     res.cookie('refresh_token', refreshToken, COOKIE);
@@ -185,19 +188,22 @@ const logoutUser = async (req, res) => {
   user.refreshToken = null;
   await user.save();
 
+  const DOMAIN_NAME = process.env.DOMAIN_NAME || 'tempevents.local';
+  const isProduction = process.env.NODE_ENV === 'production';
+
   res.clearCookie("access_token", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    domain: '.tempevents.local',
+    secure: isProduction,
+    sameSite: isProduction ? "none" : "lax",
+    domain: `.${DOMAIN_NAME}`,
     path: '/',
   });
 
   res.clearCookie("refresh_token", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    domain: '.tempevents.com',
+    secure: isProduction,
+    sameSite: isProduction ? "none" : "lax",
+    domain: `.${DOMAIN_NAME}`,
     path: '/',
   });
 
@@ -335,13 +341,16 @@ const refreshAccessToken = async (req, res) => {
     // 7d for test only, must change expiry duration for production mode
     const newAccessToken = generateToken(userId, process.env.JWT_SECRET_ACCESS, "7d");
 
+    const DOMAIN_NAME = process.env.DOMAIN_NAME || 'tempevents.local';
+    const isProduction = process.env.NODE_ENV === 'production';
+
     res.cookie("access_token", newAccessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      domain: '.tempevents.local',
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
+      domain: `.${DOMAIN_NAME}`,
       path: '/',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
     res.status(200).json({
